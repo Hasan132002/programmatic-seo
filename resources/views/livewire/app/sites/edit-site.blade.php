@@ -170,6 +170,86 @@
                 @error('domain') <p class="mt-2 text-sm text-red-600 flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>{{ $message }}</p> @enderror
             </div>
 
+            {{-- Image Generation Settings --}}
+            <div class="pt-6 border-t border-gray-100">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg shadow-pink-500/25">
+                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-gray-900">AI Image Generation</h3>
+                        <p class="text-xs text-gray-500">Auto-generate images for your pages during content creation.</p>
+                    </div>
+                </div>
+
+                {{-- Provider Selection --}}
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">Image Provider</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {{-- Pollinations (Free) --}}
+                        <label class="relative cursor-pointer">
+                            <input wire:model.live="image_provider" type="radio" name="image_provider" value="pollinations" class="sr-only peer">
+                            <div class="p-4 border-2 rounded-xl transition-all duration-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-50/50 border-gray-200 hover:border-gray-300">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-bold text-sm text-gray-900">Pollinations AI</span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full uppercase">Free</span>
+                                </div>
+                                <p class="text-xs text-gray-500">No API key needed. Good quality, unlimited generations.</p>
+                            </div>
+                        </label>
+
+                        {{-- OpenAI DALL-E (Paid) --}}
+                        <label class="relative cursor-pointer">
+                            <input wire:model.live="image_provider" type="radio" name="image_provider" value="openai" class="sr-only peer">
+                            <div class="p-4 border-2 rounded-xl transition-all duration-200 peer-checked:border-indigo-500 peer-checked:bg-indigo-50/50 border-gray-200 hover:border-gray-300">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-bold text-sm text-gray-900">DALL-E (OpenAI)</span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full uppercase">Paid</span>
+                                </div>
+                                <p class="text-xs text-gray-500">Premium quality via DALL-E 3. Requires OpenAI API key.</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                {{-- OpenAI API Key (shown when openai selected) --}}
+                @if($image_provider === 'openai')
+                <div class="space-y-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl mb-5">
+                    <div>
+                        <label for="image_api_key" class="block text-sm font-semibold text-gray-700 mb-1.5">OpenAI API Key</label>
+                        <input wire:model="image_api_key"
+                               type="password"
+                               id="image_api_key"
+                               class="w-full px-4 py-2.5 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
+                               placeholder="sk-...">
+                        <p class="mt-1 text-xs text-gray-400">Your key is stored encrypted in site settings. Get one at <a href="https://platform.openai.com/api-keys" target="_blank" class="text-indigo-600 hover:underline">platform.openai.com</a></p>
+                        @error('image_api_key') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="image_model" class="block text-xs font-semibold text-gray-600 mb-1.5">Model</label>
+                            <select wire:model="image_model" id="image_model"
+                                    class="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition">
+                                <option value="dall-e-3">DALL-E 3 (Best)</option>
+                                <option value="dall-e-2">DALL-E 2 (Cheaper)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="image_style" class="block text-xs font-semibold text-gray-600 mb-1.5">Style</label>
+                            <select wire:model="image_style" id="image_style"
+                                    class="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition">
+                                <option value="natural">Natural (Realistic)</option>
+                                <option value="vivid">Vivid (Creative)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                @endif
+            </div>
+
             {{-- Subdomain Info --}}
             <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
                 <svg class="w-5 h-5 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
