@@ -113,8 +113,22 @@ class PageEditor extends Component
         $this->aiError = '';
 
         try {
+            $settings = $this->site->settings ?? [];
+            $siteApiKey = $settings['openai_api_key'] ?? null;
+            $siteModel = $settings['ai_model'] ?? null;
+            $siteTone = $settings['ai_tone'] ?? 'professional';
+
+            if ($siteApiKey) {
+                config(['openai.api_key' => $siteApiKey]);
+            }
+
             $ai = app(OpenAIService::class);
             $promptBuilder = app(PromptBuilder::class);
+
+            $options = [];
+            if ($siteModel) {
+                $options['model'] = $siteModel;
+            }
 
             $variables = [
                 'title' => $this->title,
@@ -123,12 +137,13 @@ class PageEditor extends Component
 
             if ($this->aiContentType === 'full') {
                 $prompt = $promptBuilder->build($this->site->niche_type, $variables);
+                $prompt .= "\n\nTONE: Write in a {$siteTone} tone.";
 
                 if ($this->aiCustomPrompt) {
                     $prompt .= "\n\nADDITIONAL INSTRUCTIONS:\n{$this->aiCustomPrompt}";
                 }
 
-                $response = $ai->generate($prompt);
+                $response = $ai->generate($prompt, $options);
                 $this->content_html = $response->content;
             } else {
                 $context = array_merge($variables, [
@@ -140,7 +155,7 @@ class PageEditor extends Component
                 }
 
                 $prompt = $promptBuilder->buildSection($this->aiContentType, $context);
-                $response = $ai->generate($prompt);
+                $response = $ai->generate($prompt, $options);
 
                 // Append section to existing content
                 $this->content_html = trim($this->content_html) . "\n\n" . $response->content;

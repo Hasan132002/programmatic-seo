@@ -262,20 +262,15 @@
                     </div>
                 </div>
 
-                {{-- OpenAI API Key (shown when openai selected) --}}
+                {{-- DALL-E Settings (shown when openai selected) --}}
                 @if($image_provider === 'openai')
                 <div class="space-y-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl mb-5">
-                    <div>
-                        <label for="image_api_key" class="block text-sm font-semibold text-gray-700 mb-1.5">OpenAI API Key</label>
-                        <input wire:model="image_api_key"
-                               type="password"
-                               id="image_api_key"
-                               class="w-full px-4 py-2.5 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
-                               placeholder="sk-...">
-                        <p class="mt-1 text-xs text-gray-400">Your key is stored encrypted in site settings. Get one at <a href="https://platform.openai.com/api-keys" target="_blank" class="text-indigo-600 hover:underline">platform.openai.com</a></p>
-                        @error('image_api_key') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                    </div>
-
+                    @if(empty($openai_api_key))
+                        <p class="text-xs text-amber-600 flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" /></svg>
+                            Add your OpenAI API Key above to use DALL-E.
+                        </p>
+                    @endif
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label for="image_model" class="block text-xs font-semibold text-gray-600 mb-1.5">Model</label>
