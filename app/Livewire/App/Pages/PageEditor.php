@@ -5,6 +5,7 @@ namespace App\Livewire\App\Pages;
 use App\Enums\ContentStatus;
 use App\Enums\NicheType;
 use App\Models\Page;
+use App\Models\PageTemplate;
 use App\Models\Site;
 use App\Services\AI\OpenAIService;
 use App\Services\Content\PromptBuilder;
@@ -22,6 +23,7 @@ class PageEditor extends Component
     public string $meta_title = '';
     public string $meta_description = '';
     public string $status = 'draft';
+    public ?int $template_id = null;
 
     public bool $isEdit = false;
 
@@ -45,6 +47,7 @@ class PageEditor extends Component
             $this->meta_title = $page->meta_title ?? '';
             $this->meta_description = $page->meta_description ?? '';
             $this->status = $page->status?->value ?? 'draft';
+            $this->template_id = $page->template_id;
         }
     }
 
@@ -68,6 +71,7 @@ class PageEditor extends Component
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string|max:500',
             'status' => 'required|in:draft,published',
+            'template_id' => 'nullable|exists:page_templates,id',
         ];
     }
 
@@ -82,6 +86,7 @@ class PageEditor extends Component
             'meta_title' => $this->meta_title ?: $this->title,
             'meta_description' => $this->meta_description ?: Str::limit(strip_tags($this->content_html), 160),
             'status' => $this->status,
+            'template_id' => $this->template_id,
             'generation_method' => 'manual',
             'published_at' => $this->status === 'published' ? now() : null,
         ];
@@ -199,6 +204,15 @@ PROMPT;
 
     public function render()
     {
-        return view('livewire.app.pages.page-editor');
+        $templates = PageTemplate::withoutGlobalScopes()
+            ->where(function ($q) {
+                $q->where('is_system', true)
+                  ->orWhere('site_id', $this->site->id);
+            })
+            ->orderBy('is_system', 'desc')
+            ->orderBy('name')
+            ->get(['id', 'name', 'niche_type', 'is_system']);
+
+        return view('livewire.app.pages.page-editor', compact('templates'));
     }
 }
