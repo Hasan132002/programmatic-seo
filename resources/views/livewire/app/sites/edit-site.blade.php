@@ -170,6 +170,54 @@
                 @error('domain') <p class="mt-2 text-sm text-red-600 flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>{{ $message }}</p> @enderror
             </div>
 
+            {{-- OpenAI API Key --}}
+            <div class="pt-6 border-t border-gray-100">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25">
+                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-gray-900">OpenAI API Key</h3>
+                        <p class="text-xs text-gray-500">Required for AI content generation and DALL-E images.</p>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="openai_api_key" class="block text-sm font-semibold text-gray-700 mb-1.5">API Key</label>
+                    <input wire:model="openai_api_key"
+                           type="password"
+                           id="openai_api_key"
+                           class="w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200"
+                           placeholder="sk-...">
+                    <p class="mt-1.5 text-xs text-gray-400">Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" class="text-indigo-600 hover:underline">platform.openai.com</a>. Used for both content and image generation.</p>
+                    @error('openai_api_key') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="ai_model" class="block text-xs font-semibold text-gray-600 mb-1.5">Content Model</label>
+                        <select wire:model="ai_model" id="ai_model"
+                                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl shadow-sm text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition">
+                            <option value="gpt-4o-mini">GPT-4o Mini (Fast & Cheap)</option>
+                            <option value="gpt-4o">GPT-4o (Best Quality)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="ai_tone" class="block text-xs font-semibold text-gray-600 mb-1.5">Content Tone</label>
+                        <select wire:model="ai_tone" id="ai_tone"
+                                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl shadow-sm text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition">
+                            <option value="professional">Professional</option>
+                            <option value="casual">Casual & Friendly</option>
+                            <option value="academic">Academic</option>
+                            <option value="persuasive">Persuasive</option>
+                            <option value="informative">Informative</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             {{-- Image Generation Settings --}}
             <div class="pt-6 border-t border-gray-100">
                 <div class="flex items-center gap-3 mb-6">
