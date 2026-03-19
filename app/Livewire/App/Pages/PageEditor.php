@@ -3,8 +3,11 @@
 namespace App\Livewire\App\Pages;
 
 use App\Enums\ContentStatus;
+use App\Enums\NicheType;
 use App\Models\Page;
 use App\Models\Site;
+use App\Services\AI\OpenAIService;
+use App\Services\Content\PromptBuilder;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
@@ -21,6 +24,13 @@ class PageEditor extends Component
     public string $status = 'draft';
 
     public bool $isEdit = false;
+
+    // AI Generation state
+    public bool $aiGenerating = false;
+    public bool $aiGeneratingMeta = false;
+    public string $aiError = '';
+    public string $aiCustomPrompt = '';
+    public string $aiContentType = 'full'; // full, intro, faq, features, conclusion
 
     public function mount(Site $site, ?Page $page = null): void
     {
@@ -84,6 +94,106 @@ class PageEditor extends Component
             $page = Page::create($data);
             return redirect()->route('app.sites.pages.edit', [$this->site, $page])
                 ->with('success', 'Page created successfully!');
+        }
+    }
+
+    public function generateContent(): void
+    {
+        if (empty($this->title)) {
+            $this->aiError = 'Please enter a page title first.';
+            return;
+        }
+
+        $this->aiGenerating = true;
+        $this->aiError = '';
+
+        try {
+            $ai = app(OpenAIService::class);
+            $promptBuilder = app(PromptBuilder::class);
+
+            $variables = [
+                'title' => $this->title,
+                'slug' => $this->slug,
+            ];
+
+            if ($this->aiContentType === 'full') {
+                $prompt = $promptBuilder->build($this->site->niche_type, $variables);
+
+                if ($this->aiCustomPrompt) {
+                    $prompt .= "\n\nADDITIONAL INSTRUCTIONS:\n{$this->aiCustomPrompt}";
+                }
+
+                $response = $ai->generate($prompt);
+                $this->content_html = $response->content;
+            } else {
+                $context = array_merge($variables, [
+                    'niche_type' => $this->site->niche_type->value,
+                ]);
+
+                if ($this->aiCustomPrompt) {
+                    $context['additional_instructions'] = $this->aiCustomPrompt;
+                }
+
+                $prompt = $promptBuilder->buildSection($this->aiContentType, $context);
+                $response = $ai->generate($prompt);
+
+                // Append section to existing content
+                $this->content_html = trim($this->content_html) . "\n\n" . $response->content;
+            }
+
+            $this->dispatch('content-updated', html: $this->content_html);
+        } catch (\Throwable $e) {
+            $this->aiError = 'AI generation failed: ' . $e->getMessage();
+        } finally {
+            $this->aiGenerating = false;
+        }
+    }
+
+    public function generateMetaTags(): void
+    {
+        if (empty($this->title)) {
+            $this->aiError = 'Please enter a page title first.';
+            return;
+        }
+
+        $this->aiGeneratingMeta = true;
+        $this->aiError = '';
+
+        try {
+            $ai = app(OpenAIService::class);
+
+            $contentSnippet = Str::limit(strip_tags($this->content_html), 500);
+
+            $prompt = <<<PROMPT
+Generate SEO-optimized meta tags for this page.
+
+Page Title: {$this->title}
+Site Niche: {$this->site->niche_type->value}
+Content Preview: {$contentSnippet}
+
+Return ONLY a JSON object with these two keys:
+- "meta_title": SEO-optimized title (max 60 chars, include primary keyword naturally)
+- "meta_description": Compelling meta description (max 155 chars, include call-to-action)
+
+Output only the JSON, no code fences or extra text.
+PROMPT;
+
+            $response = $ai->generate($prompt, ['max_tokens' => 200, 'temperature' => 0.5]);
+            $json = json_decode($response->content, true);
+
+            if ($json && isset($json['meta_title'])) {
+                $this->meta_title = Str::limit($json['meta_title'], 60, '');
+                $this->meta_description = Str::limit($json['meta_description'] ?? '', 155, '');
+            } else {
+                // Fallback: try to parse from plain text
+                $this->meta_title = Str::limit($this->title, 60, '');
+                $this->meta_description = Str::limit(strip_tags($this->content_html), 155, '');
+                $this->aiError = 'Meta tags generated with fallback. You may want to refine them.';
+            }
+        } catch (\Throwable $e) {
+            $this->aiError = 'Meta generation failed: ' . $e->getMessage();
+        } finally {
+            $this->aiGeneratingMeta = false;
         }
     }
 

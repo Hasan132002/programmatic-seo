@@ -49,6 +49,7 @@
         }
      }"
      x-init="initEditor()"
+     @content-updated.window="contentHtml = $event.detail.html; syncToVisual(); metaTitleLen = ($refs.metaTitleInput?.value || '').length; metaDescLen = ($refs.metaDescInput?.value || '').length;"
 >
     <style>
         @keyframes fadeInUp {
@@ -333,6 +334,97 @@
                                       x-text="metaDescLen + '/160'"></span>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                {{-- AI Content Generator --}}
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+                     x-data="{ showCustomPrompt: false }">
+                    <div class="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-violet-50 to-purple-50">
+                        <h4 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-violet-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                            </svg>
+                            AI Content Generator
+                        </h4>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        {{-- AI Error --}}
+                        @if($aiError)
+                            <div class="flex items-start gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-700">
+                                <svg class="w-4 h-4 flex-shrink-0 mt-0.5 text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+                                <span>{{ $aiError }}</span>
+                            </div>
+                        @endif
+
+                        {{-- Content Type --}}
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Generate</label>
+                            <select wire:model="aiContentType"
+                                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all duration-200 appearance-none cursor-pointer"
+                                    style="background-image: url(&quot;data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e&quot;); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem;">
+                                <option value="full">Full Page Content</option>
+                                <option value="intro">Introduction Only</option>
+                                <option value="faq">FAQ Section</option>
+                                <option value="features">Features / Benefits</option>
+                                <option value="comparison_table">Comparison Table</option>
+                                <option value="conclusion">Conclusion</option>
+                            </select>
+                        </div>
+
+                        {{-- Custom Prompt Toggle --}}
+                        <div>
+                            <button type="button" @click="showCustomPrompt = !showCustomPrompt"
+                                    class="flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-700 transition-colors">
+                                <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="showCustomPrompt && 'rotate-90'" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                                Custom Instructions
+                            </button>
+                            <div x-show="showCustomPrompt" x-collapse class="mt-2">
+                                <textarea wire:model="aiCustomPrompt"
+                                          rows="3"
+                                          class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all duration-200 resize-none"
+                                          placeholder="e.g. Focus on pricing, include local statistics, mention competitors..."></textarea>
+                            </div>
+                        </div>
+
+                        {{-- Generate Content Button --}}
+                        <button type="button"
+                                wire:click="generateContent"
+                                wire:loading.attr="disabled"
+                                wire:target="generateContent"
+                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl shadow-md shadow-violet-500/20 hover:shadow-violet-500/30 hover:from-violet-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-60 disabled:cursor-wait">
+                            <span wire:loading.remove wire:target="generateContent">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+                            </span>
+                            <span wire:loading wire:target="generateContent">
+                                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>
+                            </span>
+                            <span wire:loading.remove wire:target="generateContent">Generate Content</span>
+                            <span wire:loading wire:target="generateContent">Generating...</span>
+                        </button>
+
+                        <div class="border-t border-gray-100 pt-4">
+                            <p class="text-xs text-gray-400 mb-3">SEO Meta Tags</p>
+                            {{-- Generate SEO Meta Button --}}
+                            <button type="button"
+                                    wire:click="generateMetaTags"
+                                    wire:loading.attr="disabled"
+                                    wire:target="generateMetaTags"
+                                    class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-violet-700 bg-white border border-violet-200 rounded-xl hover:bg-violet-50 hover:border-violet-300 transition-all duration-200 disabled:opacity-60 disabled:cursor-wait">
+                                <span wire:loading.remove wire:target="generateMetaTags">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                                </span>
+                                <span wire:loading wire:target="generateMetaTags">
+                                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>
+                                </span>
+                                <span wire:loading.remove wire:target="generateMetaTags">Generate Meta Tags</span>
+                                <span wire:loading wire:target="generateMetaTags">Generating...</span>
+                            </button>
+                        </div>
+
+                        <p class="text-[10px] text-gray-400 leading-relaxed">
+                            Uses AI to generate SEO-optimized content based on page title and site niche ({{ $site->niche_type->value }}).
+                        </p>
                     </div>
                 </div>
 
